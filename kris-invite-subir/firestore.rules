@@ -1,0 +1,15 @@
+// Plantilla: reemplaza DOC_ID con el valor que genera tools/claves.html
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /invitaciones/{id} {
+      allow get: if id == "DOC_ID";
+      allow list, delete: if false;
+      allow create, update: if id == "DOC_ID"
+        && request.resource.data.keys().hasOnly(["tema","temaNombre","temaDetalle","bebida","bebidaComentario","intentosAlcohol","fecha","fechaId","temasVistos","mensaje","enviado","version"])
+        && request.resource.data.mensaje is string
+        && request.resource.data.mensaje.size() <= 1000;
+    }
+    match /{document=**} { allow read, write: if false; }
+  }
+}

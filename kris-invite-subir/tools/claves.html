@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Generador de claves 🔑</title>
+  <meta name="robots" content="noindex">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+  <style>
+    .card { background: var(--paper); color: var(--ink); border: var(--px) solid var(--line); padding: 16px; display: grid; gap: 10px; }
+    h1 { font-family: "Press Start 2P", monospace; font-size: 12px; color: var(--pink); margin: 0; line-height: 1.5; }
+    label { font-size: 20px; }
+    pre { background: #1a1640; color: #ffd1df; padding: 10px; overflow: auto; font-size: 16px; margin: 0; white-space: pre-wrap; word-break: break-all; }
+    .muted { font-size: 18px; color: #7a6a8a; margin: 0; }
+  </style>
+</head>
+<body>
+  <main class="game">
+    <section class="card">
+      <h1>🔑 Generador de claves</h1>
+      <p class="muted">Todo se calcula en tu navegador; no se envía nada. Escribe la respuesta secreta en singular (ej. "vaca"): el juego acepta también el plural.</p>
+      <label for="q">Pregunta</label>
+      <input class="field" id="q" placeholder="¿Cuál es uno de los animales favoritos de Kristel?">
+      <label for="a">Respuesta secreta</label>
+      <input class="field" id="a" placeholder="vaca" autocomplete="off">
+      <button class="btn primary" id="go">Generar</button>
+      <div id="res" hidden>
+        <p class="muted">1) Pega esto en <b>js/config.js</b> (reemplaza pregunta y hashPuerta):</p>
+        <pre id="cfg"></pre>
+        <p class="muted">2) Pega estas reglas en Firebase → Firestore → Reglas:</p>
+        <pre id="rules"></pre>
+        <p class="muted">3) Tu link privado (cambia el dominio por el tuyo):</p>
+        <pre id="admin"></pre>
+      </div>
+    </section>
+  </main>
+  <script src="../js/storage.js"></script>
+  <script>
+    document.getElementById("go").onclick = async () => {
+      const norm = KI.storage.normalize(document.getElementById("a").value);
+      if (!norm) return;
+      const q = document.getElementById("q").value.trim() || "¿Cuál es uno de los animales favoritos de Kristel?";
+      const gate = await KI.storage.sha256("kris-puerta:" + norm);
+      const doc = await KI.storage.sha256("kris-doc:" + norm);
+      document.getElementById("cfg").textContent =
+        `pregunta: ${JSON.stringify(q)},\nhashPuerta: "${gate}",`;
+      document.getElementById("rules").textContent = `rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /invitaciones/{id} {
+      allow get: if id == "${doc}";
+      allow list, delete: if false;
+      allow create, update: if id == "${doc}"
+        && request.resource.data.keys().hasOnly(["tema","temaNombre","temaDetalle","bebida","bebidaComentario","intentosAlcohol","fecha","fechaId","temasVistos","mensaje","enviado","version"])
+        && request.resource.data.mensaje is string
+        && request.resource.data.mensaje.size() <= 1000;
+    }
+    match /{document=**} { allow read, write: if false; }
+  }
+}`;
+      const base = location.href.replace(/tools\/claves\.html.*$/, "");
+      document.getElementById("admin").textContent = `${base}admin.html#${doc}`;
+      document.getElementById("res").hidden = false;
+    };
+  </script>
+</body>
+</html>
