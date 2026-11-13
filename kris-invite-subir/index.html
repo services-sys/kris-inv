@@ -2,52 +2,94 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Una misión para Kristel 💌</title>
-  <meta name="description" content="Una invitación muy importante te espera.">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Invitación expirada</title>
   <meta name="robots" content="noindex">
-  <meta name="theme-color" content="#1a1640">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css">
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: #14121f; color: #e9e2f2; }
+    body { display: grid; place-items: center; padding: 16px; font-family: "VT323", monospace; }
+    main { width: 100%; max-width: 560px; display: grid; gap: 14px; }
+    canvas { width: 100%; aspect-ratio: 4 / 3; image-rendering: pixelated; border: 4px solid #3a3352; background: #2b2540; display: block; }
+    .box { background: #f3ead8; color: #2a2238; border: 4px solid #3a3352; padding: 14px 16px; }
+    h1 { font-family: "Press Start 2P", monospace; font-size: 13px; line-height: 1.6; margin: 0 0 8px; color: #8a3b5a; }
+    p { font-size: 22px; line-height: 1.15; margin: 6px 0; }
+    .muted { color: #7a6a8a; font-size: 19px; }
+  </style>
 </head>
 <body>
-  <main class="game">
-    <header class="hud">
-      <span class="hud-title">💌 Para: Kristel</span>
-      <span id="demo" class="demo" hidden>DEMO</span>
-      <button id="mute" class="icon-btn" aria-label="Silenciar sonido" aria-pressed="false">🔊</button>
-    </header>
-
-    <div class="stage" id="stage">
-      <canvas id="screen" width="160" height="120" aria-label="Escena del juego"></canvas>
-      <div id="bubbles" aria-hidden="true"></div>
-    </div>
-
-    <section class="dialog" id="dialog" aria-live="polite">
-      <p id="speaker" class="speaker" hidden></p>
-      <p id="text" class="text"></p>
-      <div id="choices" class="choices"></div>
+  <main>
+    <canvas id="c" width="160" height="120" aria-label="Una vaquita flaquita y triste esperando junto a un plato vacío"></canvas>
+    <section class="box">
+      <h1>⏳ Invitación expirada</h1>
+      <p>La vaquita mensajera esperó y esperó tu respuesta… hasta quedarse en los puros huesitos. 🐄🦴</p>
+      <p class="muted">Esta misión ya no está disponible.</p>
     </section>
-
-    <footer class="foot">De parte de Bernal ✨ hecho con pixeles y cariño</footer>
   </main>
-
-  <div id="letter" class="letter" hidden>
-    <div class="paper" role="dialog" aria-modal="true" aria-label="Carta de Bernal">
-      <div class="seal">💌</div>
-      <div id="letter-body"></div>
-      <p id="letter-status" class="status"></p>
-      <button id="letter-ok" class="btn primary">💖 ¡Es una cita!</button>
-    </div>
-  </div>
-
-  <script src="js/config.js"></script>
-  <script src="js/storage.js"></script>
-  <script src="js/audio.js"></script>
-  <script src="js/sprites.js"></script>
-  <script src="js/game.js"></script>
+  <script>
+  (function () {
+    const cv = document.getElementById("c"), x = cv.getContext("2d");
+    const R = (c, a, b, w, h) => { x.fillStyle = c; x.fillRect(a, b, w, h); };
+    // Vaquita acostada, flaca, costillas marcadas (cada carácter = 1 px)
+    const P = { k: "#2a2238", w: "#efe9df", g: "#c9c0b4", s: "#1c1a24", p: "#e8a3b4", r: "#a89e92", e: "#ffffff", t: "#7fc8ff" };
+    const cow = [
+      "......kk..........................",
+      ".....kwwk.kk......................",
+      "....kwwwwkwwk.....................",
+      "...kwwsswwwwwk....................",
+      "..kwwswwwwwwwwkkkkkkkkkkkkkkkkk...",
+      "..kwwkkwwkwwwwwwwwwwwwssswwwwwwk..",
+      "..kwwwwwwwwwwwwrwrwrwrsssswwwwwwk.",
+      "..kwwewkwwwwwwwwwwwwwwwssswwwwwwwk",
+      "..kwwwwwwwwwwwrwrwrwrwrwwwwwwwwwk.",
+      "..tkppppkwwwwwwwwwwwwwwwwwwwswwwk.",
+      "..tkpkpkkwwwwwrwrwrwrwrwwwwwsswk..",
+      "...kppppk.kwwwwwwwwwwwwwwwwwwwk...",
+      "....kkkk...kgkkkkgkkkkkkgkkkgk....",
+      "...........kkk..kkk.....kkk.kkk...",
+    ];
+    let t = 0;
+    function draw() {
+      t++;
+      // cielo de atardecer apagado
+      const sky = ["#2b2540", "#3a2f4f", "#4a3756", "#5b3f58", "#6b4a57"];
+      sky.forEach((c, i) => R(c, 0, i * 14, 160, 14));
+      R("#8a6a5a", 0, 70, 160, 2);
+      // sol cayendo
+      x.fillStyle = "#d98a5a"; x.beginPath(); x.arc(128, 72, 9, Math.PI, 0); x.fill();
+      // pasto seco
+      R("#5a5136", 0, 72, 160, 48);
+      for (let i = 0; i < 160; i += 7) R("#7a6b42", i + ((i * 3) % 5), 74 + ((i * 7) % 40), 2, 1);
+      // cerca
+      for (let i = 4; i < 70; i += 14) R("#4a3a2a", i, 58, 2, 16);
+      R("#4a3a2a", 4, 62, 66, 1); R("#4a3a2a", 4, 68, 66, 1);
+      // vaquita
+      const ox = 10, oy = 80 + (t % 60 < 30 ? 0 : 1);
+      cow.forEach((row, j) => [...row].forEach((ch, i) => { if (P[ch]) R(P[ch], ox + i * 2, oy + j * 2, 2, 2); }));
+      // lágrima que cae
+      const ly = (t * 0.3) % 10;
+      R("#7fc8ff", ox + 12, oy + 18 + ly, 2, 2);
+      // plato vacío
+      R("#2a2238", 86, 100, 16, 1); R("#9a8fa8", 87, 101, 14, 3); R("#2a2238", 88, 104, 12, 1);
+      // sobre con telarañas
+      R("#f3ead8", 128, 92, 18, 12); R("#c9bba0", 128, 92, 18, 1);
+      x.strokeStyle = "#c9bba0"; x.beginPath(); x.moveTo(128.5, 92.5); x.lineTo(137, 99); x.lineTo(145.5, 92.5); x.stroke();
+      R("#c84a6a", 136, 98, 3, 3);
+      x.strokeStyle = "rgba(230,230,240,.7)"; x.beginPath();
+      x.moveTo(128, 86); x.lineTo(134, 92); x.moveTo(126, 90); x.lineTo(132, 92); x.moveTo(131, 87); x.lineTo(131, 92); x.stroke();
+      // moscas
+      for (let f = 0; f < 3; f++) {
+        const a = t / 9 + f * 2.1;
+        R("#111", 40 + Math.cos(a) * (8 + f * 3) | 0, 74 + Math.sin(a * 1.3) * 5 | 0, 1, 1);
+      }
+      // "zzz" débil
+      x.fillStyle = "rgba(240,230,250," + (0.4 + 0.4 * Math.sin(t / 15)) + ")";
+      x.font = "8px monospace"; x.fillText("…muu", 10, 76 - ((t / 6) % 6));
+      requestAnimationFrame(draw);
+    }
+    draw();
+  })();
+  </script>
 </body>
 </html>
