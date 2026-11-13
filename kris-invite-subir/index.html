@@ -2,151 +2,209 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>La vaquita mensajera</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Mensaje expirado ⏳</title>
   <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#1a1640">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐄</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
   <style>
-    * { box-sizing: border-box; }
-    html, body { margin: 0; min-height: 100%; background: #14121f; color: #e9e2f2; }
-    body { display: grid; place-items: center; padding: 16px; font-family: "VT323", monospace; }
-    main { width: 100%; max-width: 560px; display: grid; gap: 14px; }
-    canvas { width: 100%; aspect-ratio: 4 / 3; image-rendering: pixelated; border: 4px solid #3a3352; background: #2b2540; display: block; }
-    .box { background: #f3ead8; color: #2a2238; border: 4px solid #3a3352; padding: 14px 16px; }
-    h1 { font-family: "Press Start 2P", monospace; font-size: 13px; line-height: 1.6; margin: 0 0 8px; color: #8a3b5a; }
-    p { font-size: 22px; line-height: 1.15; margin: 6px 0; }
-    .muted { color: #7a6a8a; font-size: 19px; }
+    .dialog { min-height: 0; }
+    .text { min-height: 0; }
+    .stage { cursor: pointer; }
   </style>
 </head>
 <body>
-  <main>
-    <canvas id="c" width="160" height="120" aria-label="Una vaquita flaquita y triste esperando junto a un plato vacío"></canvas>
-    <section class="box">
-      <p>La vaquita mensajera tiene demasiada hambre para poder llevar tu mensaje.</p>
+  <main class="game">
+    <header class="hud">
+      <span class="hud-title">💌 Correo vaquero</span>
+    </header>
+
+    <div class="stage" id="stage">
+      <canvas id="screen" width="160" height="120" aria-label="Una vaquita mensajera flaquita intenta despegar con una carta, pero tiene demasiada hambre"></canvas>
+      <div id="bubbles" aria-hidden="true"></div>
+    </div>
+
+    <section class="dialog">
+      <p class="speaker">⏳ Mensaje expirado</p>
+      <p class="text">La vaquita mensajera tiene demasiada hambre para poder llevar tu mensaje.</p>
     </section>
   </main>
+
+  <script src="js/audio.js"></script>
+  <script src="js/sprites.js"></script>
   <script>
+  /* Invitación cerrada: la vaquita mensajera del juego, ahora en los huesitos. No hay nada que iniciar. */
   (function () {
-    const cv = document.getElementById("c"), x = cv.getContext("2d");
-    const R = (c, a, b, w, h) => { x.fillStyle = c; x.fillRect(a, b, w, h); };
-    // Vaquita acostada, flaca, costillas marcadas (cada carácter = 1 px)
-    const P = { k: "#2a2238", w: "#efe9df", g: "#c9c0b4", s: "#1c1a24", p: "#e8a3b4", r: "#a89e92", e: "#ffffff", t: "#7fc8ff" };
-    const cow = [
-      "......kk..........................",
-      ".....kwwk.kk......................",
-      "....kwwwwkwwk.....................",
-      "...kwwsswwwwwk....................",
-      "..kwwswwwwwwwwkkkkkkkkkkkkkkkkk...",
-      "..kwwkkwwkwwwwwwwwwwwwssswwwwwwk..",
-      "..kwwwwwwwwwwwwrwrwrwrsssswwwwwwk.",
-      "..kwwewkwwwwwwwwwwwwwwwssswwwwwwwk",
-      "..kwwwwwwwwwwwrwrwrwrwrwwwwwwwwwk.",
-      "..tkppppkwwwwwwwwwwwwwwwwwwwswwwk.",
-      "..tkpkpkkwwwwwrwrwrwrwrwwwwwsswk..",
-      "...kppppk.kwwwwwwwwwwwwwwwwwwwk...",
-      "....kkkk...kgkkkkgkkkkkkgkkkgk....",
-      "...........kkk..kkk.....kkk.kkk...",
-    ];
-    const stars = [[12,8],[30,20],[47,6],[66,16],[84,9],[103,22],[121,7],[142,15],[154,30],[20,34],[74,32],[112,38]];
-    const circ = (c, cx, cy, r) => { x.fillStyle = c; x.beginPath(); x.arc(cx, cy, r, 0, 7); x.fill(); };
-    let t = 0;
-    function draw() {
-      t++;
-      const c = t % 660;                       // ciclo de ~11 s
-      const growl = c < 70, dream = c > 110 && c < 340, moo = c > 380 && c < 450;
-      // cielo de atardecer apagado
-      ["#2b2540", "#3a2f4f", "#4a3756", "#5b3f58", "#6b4a57"].forEach((k, i) => R(k, 0, i * 14, 160, 14));
-      // estrellas que titilan
-      stars.forEach(([sx, sy], i) => { if (Math.sin(t / 14 + i * 1.7) > -0.2) R(Math.sin(t / 9 + i) > 0.6 ? "#fff" : "#b9a9c9", sx, sy, 1, 1); });
-      // nubes lentas
-      [[0.05, 14, 22], [0.03, 40, 16]].forEach(([v, cy, w], i) => {
-        const cx = ((t * v + i * 90) % 200) - 30;
-        R("#54415f", cx, cy, w, 3); R("#54415f", cx + 4, cy - 2, w - 9, 2); R("#5f4a66", cx + 2, cy + 3, w - 5, 1);
-      });
-      // sol cayendo con resplandor
-      circ("rgba(217,138,90," + (0.18 + 0.06 * Math.sin(t / 30)) + ")", 128, 72, 15);
-      x.fillStyle = "#d98a5a"; x.beginPath(); x.arc(128, 72, 9, Math.PI, 0); x.fill();
-      R("#8a6a5a", 0, 70, 160, 2);
-      // pasto seco
-      R("#5a5136", 0, 72, 160, 48);
-      for (let i = 0; i < 160; i += 7) R("#7a6b42", i + ((i * 3) % 5), 74 + ((i * 7) % 40), 2, 1);
-      // briznas secas que se mecen
-      for (let i = 0; i < 9; i++) { const gx = 6 + i * 18, gy = 112 + (i % 3) * 2, sw = Math.sin(t / 25 + i) > 0 ? 1 : 0; R("#8a7a4a", gx, gy, 1, 3); R("#8a7a4a", gx + sw, gy - 2, 1, 2); }
-      // cerca
-      for (let i = 4; i < 70; i += 14) R("#4a3a2a", i, 58, 2, 16);
-      R("#4a3a2a", 4, 62, 66, 1); R("#4a3a2a", 4, 68, 66, 1);
-      // planta rodadora (pasa por detrás)
-      if (c > 430) {
-        const p = (c - 430) / 230, tx = 172 - p * 190, ty = 73 - Math.abs(Math.sin(p * 14)) * 5, an = -p * 22;
-        x.strokeStyle = "#a08a52"; x.lineWidth = 1; x.beginPath(); x.arc(tx, ty, 4, 0, 7);
-        for (let k = 0; k < 3; k++) { const q = an + k * 1.05; x.moveTo(tx - Math.cos(q) * 4, ty - Math.sin(q) * 4); x.lineTo(tx + Math.cos(q) * 4, ty + Math.sin(q) * 4); }
-        x.stroke();
-      }
-      // vaquita: respira, tiembla cuando le ruge la panza, levanta la cabeza para mugir
-      const br = Math.sin(t / 28) > 0.2 ? 1 : 0;
-      const ox = 10 + (growl ? (t % 6 < 3 ? 1 : 0) : 0), oy = 80;
-      const head = moo ? -2 : 0, ear = (c > 200 && c < 214) || (c > 520 && c < 530) ? 1 : 0;
-      // cola
-      const fl = t % 170 < 14 ? (t % 170 < 7 ? -3 : -5) : 0;
-      R(P.k, ox + 68, oy + 14, 2, 2); R(P.k, ox + 70, oy + 15 + (fl ? -1 : 1), 2, 2); R(P.k, ox + 72, oy + 16 + (fl || 3), 2, 2); R(P.s, ox + 73, oy + 17 + (fl ? fl - 1 : 5), 3, 3);
-      cow.forEach((row, j) => [...row].forEach((ch, i) => {
-        if (!P[ch]) return;
-        const isHead = i < 14 && j < 12;
-        if (isHead) R(P[ch], ox + i * 2 + (j < 3 ? ear : 0), oy + j * 2 + head, 2, 2 - head * (j > 9 ? 1 : 0));
-        else if (j <= 6) R(P[ch], ox + i * 2, oy + j * 2 - br, 2, 2 + br);
-        else R(P[ch], ox + i * 2, oy + j * 2, 2, 2);
-      }));
-      // parpadeo
-      if (t % 190 < 9) { R(P.w, ox + 10, oy + 10 + head, 4, 2); R(P.k, ox + 10, oy + 11 + head, 4, 1); }
-      // lágrima que cae y salpica
-      const lc = t % 110;
-      if (lc < 46) R("#7fc8ff", ox + 4, oy + 18 + head + lc * 0.2, 2, 2);
-      else if (lc < 56) { R("#7fc8ff", ox + 2 - (lc - 46) / 4, oy + 27, 1, 1); R("#7fc8ff", ox + 7 + (lc - 46) / 4, oy + 27, 1, 1); }
-      // plato vacío (tiembla con el rugido)
-      const px = growl && t % 8 < 4 ? 1 : 0;
-      R("#2a2238", 98 + px, 100, 16, 1); R("#9a8fa8", 99 + px, 101, 14, 3); R("#2a2238", 100 + px, 104, 12, 1);
-      if (Math.sin(t / 20) > 0.92) R("#fff", 102 + px, 101, 2, 1);
-      // sobre con telarañas
-      R("#f3ead8", 128, 92, 18, 12); R("#c9bba0", 128, 92, 18, 1);
-      x.strokeStyle = "#c9bba0"; x.beginPath(); x.moveTo(128.5, 92.5); x.lineTo(137, 99); x.lineTo(145.5, 92.5); x.stroke();
-      R("#c84a6a", 136, 98, 3, 3);
-      x.strokeStyle = "rgba(230,230,240,.7)"; x.beginPath();
-      x.moveTo(128, 86); x.lineTo(134, 92); x.moveTo(126, 90); x.lineTo(132, 92); x.moveTo(131, 87); x.lineTo(131, 92); x.stroke();
-      // arañita que sube y baja
-      const sp = 4 + Math.sin(t / 40) * 4; R("rgba(230,230,240,.7)", 150, 92, 1, sp); R("#1c1a24", 149, 92 + sp, 3, 2);
-      // moscas en ochos
-      for (let f = 0; f < 3; f++) {
-        const a = t / 8 + f * 2.1;
-        R("#111", ox + 40 + Math.sin(a) * (9 + f * 3) | 0, oy - 4 + Math.sin(a * 2) * 4 | 0, 1, 1);
-      }
-      x.textBaseline = "alphabetic";
-      // rugido de tripas
-      if (growl) {
-        x.font = '6px "Press Start 2P", monospace'; x.fillStyle = "#ffd98a";
-        x.fillText("grr" + (c > 25 ? "r" : "") + (c > 45 ? "…" : ""), ox + 34 + (t % 4 < 2 ? 1 : 0), oy - 6 - (t % 6 < 3 ? 1 : 0));
-        for (let k = 0; k < 3; k++) R("#ffd98a", ox + 36 + k * 6, oy + 2 + ((t >> 2) + k) % 2, 3, 1);
-      }
-      // sueña con pasto fresco
-      if (dream) {
-        const k = Math.min(1, (c - 110) / 25), end = c > 310;
-        circ("#f3ead8", 38, 76, 1.5); if (k > 0.4) circ("#f3ead8", 43, 70, 2.5);
-        if (k > 0.8 && !(end && t % 6 < 3)) {
-          const by = 52 + Math.sin(t / 22) * 1.5;
-          x.fillStyle = "#f3ead8"; x.beginPath(); x.ellipse(62, by, 17, 12, 0, 0, 7); x.fill();
-          R("#4c9a3a", 50, by + 5, 24, 2);
-          for (let g = 0; g < 8; g++) { const h = 4 + (g * 5) % 6, sw = Math.sin(t / 12 + g) > 0 ? 1 : 0; R(g % 2 ? "#5cb84a" : "#3f8a30", 51 + g * 3, by + 5 - h, 2, h); R("#7fd66a", 51 + g * 3 + sw, by + 4 - h, 1, 2); }
-          R("#ffd1df", 58, by - 5, 2, 2); R("#ffe98a", 68, by - 3, 2, 2);
-        }
-      }
-      // mugido débil
-      if (moo) {
-        x.font = '6px "Press Start 2P", monospace';
-        x.fillStyle = "rgba(240,230,250," + (1 - (c - 380) / 70) + ")";
-        x.fillText("mu" + (c > 400 ? "u" : "") + (c > 420 ? "…" : ""), ox + 2, oy - 6 - (c - 380) / 8);
-      }
-      requestAnimationFrame(draw);
+    const { W, H, GROUND, COW, WING_UP, WING_DN, ENVELOPE, scenes, R } = KI.sprites;
+    const cv = document.getElementById("screen"), ctx = cv.getContext("2d");
+    ctx.imageSmoothingEnabled = false;
+
+    // La misma vaquita del juego, pero flaquita: panza hundida, costillas y ojeras
+    function skinny(src) {
+      const c = document.createElement("canvas"); c.width = src.width; c.height = src.height;
+      const x = c.getContext("2d"); x.drawImage(src, 0, 0);
+      x.clearRect(3, 9, 8, 1); x.clearRect(4, 8, 6, 1);
+      x.fillStyle = "#d8d0e0"; [3, 4, 9, 10].forEach((i) => x.fillRect(i, 8, 1, 1));
+      x.fillStyle = "#b9adc9"; [8, 10, 12].forEach((i) => x.fillRect(i, 5, 1, 3));
+      x.fillRect(2, 6, 1, 2);
+      x.fillStyle = "#c9b6d6"; x.fillRect(15, 3, 1, 1); x.fillRect(18, 3, 1, 1);
+      return c;
     }
-    draw();
+    const SK = { a: skinny(COW.a), b: skinny(COW.b) };
+    const BITTEN = (() => {
+      const c = document.createElement("canvas"); c.width = 9; c.height = 6;
+      const x = c.getContext("2d"); x.drawImage(ENVELOPE, 0, 0);
+      x.clearRect(0, 0, 3, 2); x.clearRect(0, 2, 2, 1); x.clearRect(0, 3, 1, 1);
+      return c;
+    })();
+
+    const Z = 2;   // zoom de los actores sobre el escenario original
+    const S = {
+      t: 0, shake: 0, zzz: false, parts: [],
+      cow: { x: 16, tx: 16, alt: 0, vy: 0, dir: 1, walk: false, flap: 0, rise: null, hang: false, fall: false, sit: false, tremble: false, dizzy: false, nom: false },
+      env: { x: 46, y: GROUND - 6, held: false, bitten: false, show: true, vy: 0, vx: 0, fly: false },
+    };
+
+    function bubble(txt, x, y, ms = 1600) {
+      const b = document.createElement("div");
+      b.className = "bubble"; b.textContent = txt;
+      b.style.left = Math.max(24, Math.min(76, (x * Z / W) * 100)) + "%";      // los actores van al doble de tamaño
+      b.style.top = ((GROUND - (GROUND - y) * Z) / H) * 100 + "%";
+      document.getElementById("bubbles").appendChild(b);
+      setTimeout(() => b.remove(), ms);
+    }
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+    const until = (fn) => new Promise((r) => { const k = () => (fn() ? r() : requestAnimationFrame(k)); k(); });
+    const puff = (x, y, n, color, up) => { for (let i = 0; i < n; i++) S.parts.push({ x, y, vx: (Math.random() - 0.5) * 40, vy: up ? -10 - Math.random() * 20 : -Math.random() * 14, life: 0.5 + Math.random() * 0.4, color }); };
+
+    async function walkTo(x) {
+      const c = S.cow; c.dir = x < c.x ? -1 : 1; c.tx = x; c.walk = true;
+      await until(() => Math.abs(c.x - x) < 0.6);
+      c.x = x; c.walk = false;
+    }
+
+    async function story() {
+      const c = S.cow, e = S.env;
+      await wait(900);
+      for (;;) {
+        // 1. ve la carta y va por ella
+        bubble("¡Correo! 💌", c.x + 12, GROUND - 22); await wait(1300);
+        await walkTo(e.x - 20); c.dir = 1;
+        e.held = true; await wait(400);
+        // 2. intenta despegar
+        bubble("Uno… dos…", c.x + 12, GROUND - 22, 1100); c.flap = 1; await wait(1200);
+        c.flap = 2; c.rise = 13; bubble("¡MUUU! 😤", c.x + 12, GROUND - 34, 1200);
+        await until(() => c.alt > 12);
+        await wait(500);
+        c.flap = 0; c.rise = null; c.hang = true; bubble("…ay.", c.x + 12, GROUND - 36, 700);
+        await wait(650);
+        c.hang = false; c.fall = true;
+        await until(() => c.alt <= 0);
+        c.fall = false; c.alt = 0; S.shake = 0.35; puff(c.x + 10, GROUND, 14, "#cfc6e6");
+        e.held = false; e.fly = true; e.x = c.x + 19; e.y = GROUND - 12; e.vx = 20; e.vy = -70;
+        c.sit = true; c.dizzy = true; bubble("¡Pum! 💫", c.x + 12, GROUND - 20, 1200);
+        await until(() => !e.fly); await wait(1100);
+        // 3. le ruge la panza
+        c.dizzy = false; c.tremble = true; bubble("GRRRR… 🍽️", c.x + 8, GROUND - 16, 1500); await wait(1600);
+        c.tremble = false; await wait(300);
+        c.sit = false; bubble("👀", c.x + 16, GROUND - 22, 1000); await wait(1100);
+        // 4. se merienda la carta
+        await walkTo(e.x - 20); c.dir = 1; await wait(350);
+        c.nom = true; bubble("ñam", c.x + 20, GROUND - 20, 700); await wait(450);
+        e.bitten = true; puff(e.x + 1, e.y + 1, 6, "#fff6e8", true); await wait(500);
+        bubble("ñam ñam", c.x + 20, GROUND - 20, 800); await wait(900); c.nom = false;
+        bubble("¿Qué? Tenía hambre. 🙄", c.x + 10, GROUND - 22, 2000); await wait(2300);
+        // 5. siesta y a intentarlo otra vez
+        c.sit = true; S.zzz = true; await wait(3200); S.zzz = false; c.sit = false;
+        await walkTo(16); c.dir = 1;
+        e.show = false; await wait(300);
+        e.x = 46; e.y = GROUND - 6; e.bitten = false; e.show = true; puff(e.x + 4, e.y + 2, 8, "#ffd36b", true);
+        await wait(1200);
+      }
+    }
+
+    let last = performance.now();
+    function frame(now) {
+      const dt = Math.min(0.05, (now - last) / 1000); last = now; S.t += dt;
+      const c = S.cow, e = S.env;
+      if (c.walk) c.x += Math.sign(c.tx - c.x) * Math.min(Math.abs(c.tx - c.x), 16 * dt);
+      if (c.rise != null) c.alt += (c.rise + 0.6 - c.alt) * Math.min(1, dt * 2.2);
+      if (c.fall) { c.vy += 260 * dt; c.alt -= c.vy * dt; } else c.vy = 0;
+      if (e.fly) {
+        e.vy += 220 * dt; e.x += e.vx * dt; e.y += e.vy * dt;
+        if (e.y >= GROUND - 6) { e.y = GROUND - 6; e.fly = false; puff(e.x + 4, GROUND, 4, "#cfc6e6"); }
+      }
+      if (S.shake > 0) S.shake -= dt;
+      S.parts = S.parts.filter((p) => (p.life -= dt) > 0);
+      S.parts.forEach((p) => { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 40 * dt; });
+
+      ctx.save();
+      if (S.shake > 0) ctx.translate(Math.round((Math.random() - 0.5) * 4), Math.round((Math.random() - 0.5) * 3));
+      ctx.imageSmoothingEnabled = false;
+      scenes.noche(ctx, S.t, S);
+      ctx.translate(0, GROUND); ctx.scale(Z, Z); ctx.translate(0, -GROUND);
+      // plato vacío de la mensajera
+      R(ctx, 1, GROUND - 3, 12, 1, "#2b2233"); R(ctx, 2, GROUND - 2, 10, 2, "#b9adc9"); R(ctx, 3, GROUND, 8, 1, "#2b2233");
+      if (Math.sin(S.t * 3) > 0.95) R(ctx, 4, GROUND - 2, 2, 1, "#ffffff");
+
+      if (e.show && !e.held) ctx.drawImage(e.bitten ? BITTEN : ENVELOPE, Math.round(e.x), Math.round(e.y));
+
+      // vaquita
+      const step = Math.floor(S.t * 6) % 2;
+      const spr = c.walk && step ? SK.b : SK.a;
+      const wob = c.flap === 2 || c.hang ? Math.round(Math.sin(S.t * 30)) : 0;
+      const tr = c.tremble ? Math.floor(S.t * 24) % 2 : 0;
+      const breath = !c.walk && !c.alt && !c.flap && Math.sin(S.t * 2.2) > 0.3 ? 1 : 0;
+      const cx = Math.round(c.x) + wob + tr;
+      const cy = GROUND - 12 - Math.round(Math.max(0, c.alt)) - (c.walk ? step : 0) + (c.sit ? 2 : 0);
+      ctx.save();
+      if (c.dir < 0) { ctx.translate(2 * cx + 20, 0); ctx.scale(-1, 1); }
+      if (c.sit) {                                   // echada: sin patas
+        ctx.drawImage(spr, 0, 0, 20, 10, cx, cy, 20, 10);
+        R(ctx, cx + 1, cy + 10, 12, 1, "#2b2233");
+      } else {                                       // de pie: el lomo sube y baja al respirar
+        ctx.drawImage(spr, 0, 0, 14, 10 - breath, cx, cy + breath, 14, 10 - breath);
+        ctx.drawImage(spr, 14, 0, 6, 10, cx + 14, cy, 6, 10);
+        ctx.drawImage(spr, 0, 10, 20, 2, cx, cy + 10, 20, 2);
+      }
+      // ojos cerrados: parpadeo y siesta
+      if (S.zzz || S.t % 3.4 < 0.14) { R(ctx, cx + 15, cy + 2, 1, 1, "#ffffff"); R(ctx, cx + 18, cy + 2, 1, 1, "#ffffff"); R(ctx, cx + 15, cy + 3, 1, 1, "#2b2233"); R(ctx, cx + 18, cy + 3, 1, 1, "#2b2233"); }
+      if (c.nom && step) R(ctx, cx + 15, cy + 8, 4, 1, "#b5566a");
+      // alitas (las mismas del juego, pero ya no dan para más)
+      if (c.flap || c.hang || c.fall) {
+        const up = c.hang ? 0 : c.fall ? 1 : Math.floor(S.t * (c.flap === 2 ? 14 : 5)) % 2;
+        ctx.drawImage(up ? WING_UP : WING_DN, cx + 4, cy - 4 + (c.hang ? 2 : 0));
+      }
+      if (e.held) ctx.drawImage(ENVELOPE, cx + 19, cy + 6);
+      ctx.restore();
+
+      if (c.flap === 2 && Math.random() < 0.25) S.parts.push({ x: c.x + 14 + Math.random() * 6, y: cy, vx: (Math.random() - 0.5) * 30, vy: -20, life: 0.5, color: "#8fd3ff" });
+      if (c.dizzy) for (let i = 0; i < 3; i++) { const a = S.t * 6 + i * 2.1; R(ctx, cx + 16 + Math.cos(a) * 5, cy - 3 + Math.sin(a) * 1.5, 1, 1, "#ffd36b"); }
+      if (c.tremble) for (let i = 0; i < 3; i++) R(ctx, cx + 3 + i * 3, cy + 12 + ((Math.floor(S.t * 10) + i) % 2), 2, 1, "#ffd36b");
+      if (S.zzz) {
+        const k = (S.t * 0.7) % 1;
+        ctx.fillStyle = "rgba(255,246,201," + (1 - k) + ")"; ctx.font = '5px "Press Start 2P", monospace';
+        ctx.fillText("z", cx + 20 + k * 4, cy - 1 - k * 8); ctx.fillText("z", cx + 24 + k * 5, cy - 7 - k * 8);
+      }
+      S.parts.forEach((p) => R(ctx, p.x, p.y, 1, 1, p.color));
+      ctx.restore();
+      requestAnimationFrame(frame);
+    }
+
+    // Tocar la escena solo hace mugir a la vaquita (no inicia nada)
+    const quejas = ["Muu… 🥺", "¿Traes pasto? 🌱", "Muu… ¿pizza? 🍕"];
+    let q = 0;
+    document.getElementById("stage").addEventListener("click", () => {
+      try { KI.audio.init(); KI.audio.sfx.moo(0.8); } catch (_) {}
+      bubble(quejas[q++ % quejas.length], S.cow.x + 12, GROUND - 26 - S.cow.alt, 1200);
+    });
+
+    requestAnimationFrame(frame);
+    story();
   })();
   </script>
 </body>
